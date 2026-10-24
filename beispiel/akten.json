@@ -1,0 +1,21 @@
+{
+  "_hinweis": "Synthetische Testdaten. Die VSNR haben eine gültige Prüfziffer, gehören aber zu niemandem.",
+  "akten": [
+    {
+      "akte_id": "AK-2025-0001",
+      "vsnr": "12150385M003",
+      "nachname": "Muster",
+      "vorname": "Erika",
+      "geburtsdatum": "1985-03-15",
+      "geburtsname": null
+    },
+    {
+      "akte_id": "AK-2025-0002",
+      "vsnr": "53020779B008",
+      "nachname": "Beispiel",
+      "vorname": "Max",
+      "geburtsdatum": "1979-07-02",
+      "geburtsname": null
+    }
+  ]
+}

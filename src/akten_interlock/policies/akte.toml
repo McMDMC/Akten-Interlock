@@ -1,0 +1,63 @@
+# Policy für den Akten-Interlock. Wird von agent-interlock geladen und geprüft.
+# Klassen: read = nur lesen, write = ändert die Akte, actuate = verlässt das Haus (irreversibel).
+# Der SHA-256 dieser Datei steht in jedem Audit-Start-Eintrag.
+
+[interlock]
+mode = "enforce"             # "observe" = nur protokollieren (Einführungsphase)
+lockout_after = 3            # 3 Verstöße in 10 Minuten -> Komponente gesperrt
+violation_window_s = 600
+estop_blocks = ["actuate"]   # Not-Halt (Datenschutzvorfall) stoppt jeden Versand
+
+# --- lesen -------------------------------------------------------------------
+[tools.akte_lesen]
+class = "read"
+params.akte_id = { type = "string", pattern = "[A-Z0-9\\-]{4,32}" }
+
+# --- ablegen -----------------------------------------------------------------
+# Nur mit bestätigter Identität. Wer "abweichend" oder "unklar" übergibt, wird abgewiesen.
+[tools.dokument_ablegen]
+class = "write"
+agents = ["posteingang", "sachbearbeitung"]
+params.akte_id = { type = "string", pattern = "[A-Z0-9\\-]{4,32}" }
+params.dok_id = { type = "string", pattern = "[A-Z0-9\\-]{4,40}" }
+params.identitaet = { enum = ["match"] }
+params.sha256 = { type = "string", pattern = "[0-9a-f]{64}" }
+
+# Unklare Identität: nur nach namentlicher Prüfung durch einen Menschen.
+[tools.dokument_ablegen_nach_pruefung]
+class = "write"
+require_approval = true
+agents = ["posteingang", "sachbearbeitung"]
+params.akte_id = { type = "string", pattern = "[A-Z0-9\\-]{4,32}" }
+params.dok_id = { type = "string", pattern = "[A-Z0-9\\-]{4,40}" }
+params.identitaet = { enum = ["unklar"] }
+params.sha256 = { type = "string", pattern = "[0-9a-f]{64}" }
+
+# Abweichende oder ungeklärte Dokumente gehen in die Quarantäne, nie in die Akte.
+[tools.dokument_quarantaene]
+class = "write"
+params.dok_id = { type = "string", pattern = "[A-Z0-9\\-]{4,40}" }
+params.identitaet = { enum = ["abweichend", "unklar"] }
+params.grund = { type = "string", max_len = 300 }
+
+# --- Fristen -----------------------------------------------------------------
+[tools.frist_eskalieren]
+class = "write"
+params.akte_id = { type = "string", pattern = "[A-Z0-9\\-]{4,32}" }
+params.norm = { type = "string", max_len = 40 }
+params.ende = { type = "string", pattern = "\\d{4}-\\d{2}-\\d{2}" }
+params.ampel = { enum = ["gelb", "rot"] }
+
+# --- Versand (verlässt das Haus) ---------------------------------------------
+# Nur die Export-Komponente, nur ohne offene Quarantäne, nur mit vollständigem Manifest,
+# immer mit Vier-Augen-Freigabe.
+[tools.akte_exportieren]
+class = "actuate"
+require_approval = true
+agents = ["export"]
+params.akte_id = { type = "string", pattern = "[A-Z0-9\\-]{4,32}" }
+params.empfaenger = { enum = ["sozialgericht", "bevollmaechtigte", "betroffene_person"] }
+params.fremd_treffer = { type = "int", min = 0, max = 0 }
+params.quarantaene_offen = { type = "int", min = 0, max = 0 }
+params.manifest_vollstaendig = { type = "bool", enum = [true] }
+params.manifest_sha256 = { type = "string", pattern = "[0-9a-f]{64}" }

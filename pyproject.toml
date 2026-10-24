@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "akten-interlock"
+version = "0.2.0"
+description = "Poka-Yoke für die E-Akte: Identitätsprüfung vor dem Ablegen, Export-Interlock vor dem Versand, Fristenwächter nach §§ 14, 18 SGB IX."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "McMDMC" }]
+keywords = ["govtech", "e-akte", "sgb-ix", "datenschutz", "poka-yoke", "interlock"]
+dependencies = [
+  # Prüfkern. Gepinnt auf einen Commit, weil das Paket nicht auf PyPI liegt.
+  "agent-interlock @ git+https://github.com/McMDMC/agent-interlock@c42800f5168520a1d7548d7f88875f16feb84b32",
+]
+
+[project.optional-dependencies]
+pdf = ["ocrmypdf>=16", "img2pdf>=0.5"]
+foto = ["opencv-python-headless>=4.10", "numpy>=1.26", "pillow>=10.1", "pillow-heif>=0.18"]
+mcp = ["mcp>=2.3,<3"]
+dev = ["pytest>=8", "anyio>=4", "ruff>=0.6", "mypy>=1.10", "pypdf>=4"]
+
+[project.scripts]
+akten-interlock = "akten_interlock.cli:main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/akten_interlock"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+# agent-interlock liefert (noch) kein py.typed; PDF- und Foto-Pakete sind optional.
+module = [
+  "agent_interlock", "agent_interlock.*", "pikepdf", "img2pdf", "PIL", "PIL.*", "cv2",
+  "pillow_heif",
+]
+ignore_missing_imports = true
